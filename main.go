@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	_ "embed"
+	_ "embed" // Used to embed sql queries in the compiled binary
 
 	_ "github.com/lib/pq"
 )
@@ -88,6 +88,7 @@ func main() {
 		quit(err)
 	}
 
+	// parse command line arguments
 	switch len(os.Args) {
 	case 0, 1:
 		// default to `show`
@@ -103,12 +104,14 @@ func main() {
 			case 0, 1, 2:
 				quit(fmt.Errorf("Not enough arguments.\n%s", usageAdd))
 			case 3, 4:
+				// initialize a student
 				s := student{
 					firstName: args[1],
 					lastName: args[2],
 					email: args[3],
 					date: new(time.Time),
 				}
+				// handle the optional date argument
 				if len(args) - 1 == 4 {
 					*s.date, err = time.Parse(time.DateOnly, args[4])
 					if err != nil {
@@ -128,6 +131,8 @@ func main() {
 			if len(args) - 1 == 0 {
 				quit(fmt.Errorf("No ids provided.\n%s", usageDelete))
 			}
+			// iterate over the ids and delete each student with a matching one
+			// fail if an invalid id is read
 			for _, a := range args[1:] {
 				id, err := strconv.Atoi(a)
 				if err != nil {
@@ -164,6 +169,7 @@ func main() {
 				quit(fmt.Errorf("Not enough arguments.\n%s", usageUpdate))
 			case 2:
 				id, err := strconv.Atoi(args[1])
+				// check that the converted id is valid before attempting to update
 				if err != nil {
 					quit(fmt.Errorf("\"%s\" is not a valid id (%s).", args[1], err))
 				}
@@ -193,6 +199,7 @@ func quit(err error) {
 //go:embed db/select_students.sql
 var selectAll string
 
+// Prints all the entries of the students table as a markdown table.
 func getAllStudents(db *sql.DB, out io.Writer) error {
 	rows, err := db.Query(selectAll)
 	if err != nil {
@@ -230,7 +237,7 @@ func getAllStudents(db *sql.DB, out io.Writer) error {
 		len("first_name"),
 		len("last_name"),
 		len("email"),
-		len("date"),
+		len("enrollment_date"),
 	}
 
 	for i, s := range students {
@@ -252,7 +259,7 @@ func getAllStudents(db *sql.DB, out io.Writer) error {
 			leftPadding, l[1], "first_name",
 			leftPadding, l[2], "last_name",
 			leftPadding, l[3], "email",
-			leftPadding, l[4], "date",
+			leftPadding, l[4], "enrollment_date",
 		)
 
 	fmt.Fprintf(out, "|%s|%s|%s|%s|%s|\n", 
@@ -279,6 +286,7 @@ func getAllStudents(db *sql.DB, out io.Writer) error {
 //go:embed db/insert_student.sql
 var insert string
 
+// Adds a student to the students table (date is optional).
 func addStudent(db *sql.DB, s student) error {
 	var err error
 	if s.date == nil {
@@ -292,6 +300,7 @@ func addStudent(db *sql.DB, s student) error {
 //go:embed db/update_student.sql
 var update string
 
+// Updates the student's email with the matching id in the students table.
 func updateStudentEmail(db *sql.DB, id int, email string) error {
 	_, err := db.Exec(update, id, email)
 	return err
@@ -300,6 +309,7 @@ func updateStudentEmail(db *sql.DB, id int, email string) error {
 //go:embed db/delete_student.sql
 var delete string
 
+// Deletes the student with the matching id from the students table.
 func deleteStudent(db *sql.DB, id int) error {
 	_, err := db.Exec(delete, id)
 	return err
