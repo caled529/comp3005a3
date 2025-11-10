@@ -29,3 +29,7 @@ Options:
 
 The same flag works for each of the subcommands, and is useful for learning the
 order of the positional arguments.
+
+## Demo
+
+https://youtu.be/f5WFB11dPHY
